@@ -1642,7 +1642,9 @@ if (debugMode) {
   document.getElementById('simRun').addEventListener('click', () => {
     simStopped = false;
     const stopBtn = document.getElementById('simStop');
+    const runBtn = document.getElementById('simRun');
     stopBtn.style.display = 'inline';
+    runBtn.disabled = true;
     const numBalls = parseInt(document.getElementById('simBalls').value) || 1000000;
     const seedVal = document.getElementById('simSeed').value ? parseInt(document.getElementById('simSeed').value) : Math.floor(Date.now()/1000);
     const perSession = parseInt(document.getElementById('simSession').value) || 0;
@@ -1692,6 +1694,7 @@ Max Prog: ×${s.progressiveMax}`;
           setTimeout(runChunk, 0);
         } else {
           stopBtn.style.display = 'none';
+          runBtn.disabled = false;
           const prefix = simStopped ? '🛑' : '✅';
           out.textContent = formatStats(state.stats, state.totalWin, prefix);
         }
@@ -1718,6 +1721,7 @@ Max Prog: ×${s.progressiveMax}`;
           setTimeout(runSession, 0);
         } else {
           stopBtn.style.display = 'none';
+          runBtn.disabled = false;
           rtps.sort((a,b) => a - b);
           const n = rtps.length;
           const mean = rtps.reduce((a,b) => a+b, 0) / n;
