@@ -2,18 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Ball Rush League Interactive v1.0.3</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <title>Ball Rush League Interactive v1.0.2</title>
-  <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { overflow: hidden; height: 100%; touch-action: manipulation; }
+    html { overflow-x: hidden; }
+    html, body { overflow: hidden; height: 100%; touch-action: manipulation; max-width: 100vw; }
+    body { overflow-x: hidden !important; }
+    ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    html { overflow-x: hidden; }
+    @media (max-width: 500px) {
+      html, body { overflow: visible !important; height: auto !important; overflow-x: hidden !important; }
+      body { flex-direction: column; align-items: stretch; padding: 6px; gap: 6px; }
+      .side-panel { display: none !important; }
+      .sg { grid-template-columns: repeat(4, 1fr); }
+      #leaderboard { display: none; }
+      #eventLog { display: none !important; }
+      .container { width: 100% !important; max-width: 100% !important; max-height: none !important; }
+      canvas { width: 100% !important; height: auto !important; aspect-ratio: 1 !important; box-sizing: border-box; }
+      .stats { gap: 10px; font-size: 12px; }
+      .controls { gap: 6px; flex-wrap: wrap; }
+      .start-overlay { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; align-items: center !important; padding: 10px !important; box-sizing: border-box !important; }
+      .start-box { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; padding: 20px !important; max-height: 90vh !important; overflow-y: auto !important; }
+      .start-overlay:not(.hidden) ~ .container,
+      .start-overlay:not(.hidden) ~ * .container { visibility: hidden !important; }
+      body:has(.start-overlay:not(.hidden)) .container { visibility: hidden !important; }
+      body:has(.start-overlay:not(.hidden)) .side-panel { visibility: hidden !important; }
+      body:has(.start-overlay:not(.hidden)) .progressive { visibility: hidden !important; }
+      .progressive { display: none !important; }
+      #seedDisplay { display: none !important; }
+      #replayLink { display: none !important; }
+      #verifyLink { display: none !important; }
+      #mobileFooter { display: flex !important; }
+    }
     body {
       background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
       min-height: 100vh;
@@ -22,9 +48,9 @@
     }
     .side-panel {
       width: 220px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
-      align-self: flex-start; margin-top: 0;
+      align-self: flex-start; margin-top: 0; overflow: hidden;
     }
-    .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+    .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; overflow: hidden; }
     .sb { background: rgba(0,0,0,0.3); padding: 5px 7px; border-radius: 6px; font-size: 0.75rem; }
     .sb .sl { color: #8fb; font-size: 0.65rem; }
     .sb .sv { font-weight: bold; font-size: 0.9rem; }
@@ -77,7 +103,7 @@
     canvas {
       border: 4px solid #ffd700; border-radius: 10px;
       box-shadow: 0 0 30px rgba(255,215,0,0.3);
-      width: 450px; height: 450px; flex-shrink: 0;
+      width: min(450px, calc(100vw - 260px)); height: min(450px, calc(100vw - 260px)); flex-shrink: 0;
     }
     .stats { display: flex; gap: 30px; font-size: 14px; }
     .stat { text-align: center; }
@@ -146,7 +172,10 @@
     .seed-display { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 5px; font-family: monospace; }
     #langSelect { background: #1a472a; color: white; border: 1px solid #4CAF50; border-radius: 5px; padding: 8px; font-size: 14px; cursor: pointer; min-width: 80px; }
     #langSelect option { background: #1a472a; color: white; }
-    #infoBtn { background: rgba(255,255,255,0.2); color: white; padding: 10px 15px; font-size: 14px; border-radius: 8px; border: none; cursor: pointer; min-width: 70px; }
+    #leaderboard:empty { display: none; }
+    #mobileFooter { display: none !important; }
+    #statsBtn { display: none; }
+    @media (max-width: 500px) { #statsBtn { display: inline-block !important; } }
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
     .modal.show { display: flex; }
     .modal-content { background: #1a472a; border: 2px solid #ffd700; border-radius: 15px; padding: 30px; max-width: 500px; max-height: 80vh; overflow-y: auto; color: #fff; }
@@ -184,7 +213,7 @@
         <span class="lang-flag" data-lang="zh">🇨🇳</span>
       </div>
       <h1>⚽ BALL RUSH</h1>
-      <div class="subtitle">LEAGUE INTERACTIVE v1.0.2</div>
+      <div class="subtitle">LEAGUE INTERACTIVE v1.0.3</div>
       <label data-i18n="nickLabel">YOUR NICK</label>
       <div class="nick-display" id="nickDisplay"></div>
       <div class="nick-shuffle" id="nickShuffle" title="Random">🎲</div>
@@ -207,6 +236,11 @@
       <div class="sb"><div class="sl" data-i18n="stTime">💀 TIMEOUTS</div><div class="sv" id="sTimeouts">0</div></div>
     </div>
     <div id="leaderboard" style="background:rgba(0,0,0,0.3);border-radius:6px;padding:6px;margin-top:6px;"></div>
+    <div id="desktopGameLinks" style="display:none; margin-top:8px; font-size:11px; padding:6px; background:rgba(0,0,0,0.2); border-radius:6px;">
+      <div id="seedDisplayDesk" style="font-family:monospace; color:#8fb; margin-bottom:4px;"></div>
+      <a href="#" id="verifyLinkDesk" style="color:#4af; font-family:monospace; margin-right:10px; display:none;">✅ Verify</a>
+      <a href="#" id="replayLinkDesk" style="color:#88f;">📋 Скопировать ссылку</a>
+    </div>
     <div id="eventLog"></div>
   </div>
 
@@ -239,18 +273,28 @@
         <option value="pt">🇧🇷 PT</option>
         <option value="zh">🇨🇳 ZH</option>
       </select>
-      <button id="infoBtn">ℹ <span data-i18n="info">INFO</span></button>
+      <button id="infoBtn" style="background:#1a6adb; color:#fff; border:none;">ℹ <span data-i18n="info">INFO</span></button>
+      <button id="statsBtn" onclick="openStatsModal()">📊</button>
     </div>
     <div class="status" id="status"></div>
-    <div class="seed-display" id="seedDisplay"></div>
-    <div id="replayLink" style="display:none; margin-top:8px; font-size:11px;">
-      <a href="#" id="replayBtn" style="color:#88f;">📋 <span data-i18n="copyReplay">Copy Replay URL</span></a>
+    <div class="seed-display" id="seedDisplay" style="display:none;"></div>
+    <div style="display:none;">
+      <a href="#" id="verifyLink">✅ Verify</a>
+    </div>
+    <div id="replayLink" style="display:none;">
+      <a href="#" id="replayBtn"></a>
     </div>
   </div>
 
   <div class="result" id="result">
     <h2 data-i18n="youWon">You Won!</h2>
+    <button onclick="document.getElementById('result').classList.remove('show')" style="position:absolute;top:8px;right:12px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">✕</button>
     <div class="amount">$<span id="finalWin">0</span></div>
+    <div id="resultFooter" style="display:none; margin-top:8px; font-size:11px;">
+      <div id="seedDisplayResult" style="font-family:monospace; color:#8fb; margin-bottom:4px;"></div>
+      <a href="#" id="verifyLinkBtn" style="color:#4af; font-family:monospace; margin-right:10px; display:none;">✅ Verify</a>
+      <a href="#" id="replayBtnResult" style="color:#88f;">📋 <span data-i18n="copyReplay">Скопировать ссылку</span></a>
+    </div>
   </div>
 
   <div class="sound-test-panel" id="soundTestPanel">
@@ -290,7 +334,7 @@
 // ========================================
 // Ball Rush League v7.1.0 - Single Engine Architecture
 // ========================================
-const GAME_VERSION = 'v1.0.2';
+const GAME_VERSION = 'v1.0.3';
 const SERVER_URL = 'https://ball-rush-server.onrender.com';
 
 // ===== AUDIO DATA (base64) =====
@@ -579,6 +623,7 @@ function applyCoef(coef) {
     CONFIG.MAX_TICKS_PER_BALL = 600;
   }
 }
+
 function dist(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay;
   return Math.sqrt(dx * dx + dy * dy);
@@ -719,6 +764,17 @@ class GameEngine {
     }
 
     // COLLISIONS
+    // Mechanical impact: same physics as special+special bounce, loser dies
+    const applyImpact = (winner, loser, rng) => {
+      const dx = winner.x - loser.x, dy = winner.y - loser.y;
+      const d = Math.sqrt(dx*dx + dy*dy) || 1;
+      const nx = dx/d, ny = dy/d;
+      const ov = CONFIG.BALL_R * 2 - d;
+      if (ov > 0) { winner.x += nx * ov * 0.5; winner.y += ny * ov * 0.5; }
+      winner.dx = nx * CONFIG.SPEED;
+      winner.dy = ny * CONFIG.SPEED;
+      randomizeBounce(winner, rng);
+    };
     for (let i = 0; i < s.balls.length; i++) {
       for (let j = i + 1; j < s.balls.length; j++) {
         const b1 = s.balls[i], b2 = s.balls[j];
@@ -736,20 +792,19 @@ class GameEngine {
             }
             continue;
           }
-          if (s1) { b2.alive = false; s.totalWin += 1; s.stats.collisions++; s.stats.collisionsWin += 1; events.push({ type: 'collision', winner: { ...b1 }, loser: { ...b2 }, prize: 1 }); continue; }
-          if (s2) { b1.alive = false; s.totalWin += 1; s.stats.collisions++; s.stats.collisionsWin += 1; events.push({ type: 'collision', winner: { ...b2 }, loser: { ...b1 }, prize: 1 }); continue; }
+          if (s1) { b2.alive = false; applyImpact(b1, b2, s.rng); s.totalWin += 1; s.stats.collisions++; s.stats.collisionsWin += 1; events.push({ type: 'collision', winner: { ...b1 }, loser: { ...b2 }, prize: 1 }); continue; }
+          if (s2) { b1.alive = false; applyImpact(b2, b1, s.rng); s.totalWin += 1; s.stats.collisions++; s.stats.collisionsWin += 1; events.push({ type: 'collision', winner: { ...b2 }, loser: { ...b1 }, prize: 1 }); continue; }
           if (b1.value === b2.value) {
             const prize = b1.value * 2;
             s.totalWin += prize; s.stats.collisions++; s.stats.collisionsWin += prize;
-            if (s.rng.nextDouble() < 0.5) { b2.alive = false; events.push({ type: 'collision', winner: { ...b1 }, loser: { ...b2 }, prize }); }
-            else { b1.alive = false; events.push({ type: 'collision', winner: { ...b2 }, loser: { ...b1 }, prize }); }
+            if (s.rng.nextDouble() < 0.5) { b2.alive = false; applyImpact(b1, b2, s.rng); events.push({ type: 'collision', winner: { ...b1 }, loser: { ...b2 }, prize }); }
+            else { b1.alive = false; applyImpact(b2, b1, s.rng); events.push({ type: 'collision', winner: { ...b2 }, loser: { ...b1 }, prize }); }
           } else {
             s.totalWin += 1; s.stats.collisions++; s.stats.collisionsWin += 1;
             const loser = b1.value < b2.value ? b1 : b2;
             const winner = b1.value < b2.value ? b2 : b1;
             loser.alive = false;
-            const dx = winner.x - loser.x, dy = winner.y - loser.y, d = Math.sqrt(dx * dx + dy * dy);
-            if (d > 0) { winner.dx = (dx / d) * CONFIG.SPEED; winner.dy = (dy / d) * CONFIG.SPEED; randomizeBounce(winner, s.rng); }
+            applyImpact(winner, loser, s.rng);
             events.push({ type: 'collision', winner: { ...winner }, loser: { ...loser }, prize: 1 });
           }
         }
@@ -807,10 +862,12 @@ let gameState = null;
 let gameRunning = false;
 let currentSeed = null;
 let currentNick = '';
+let currentServerSeedHash = null;
+let currentClientSeed = null;
 
 // ===== FIREBASE =====
 const FB_CONFIG = {
-  apiKey: "AIzaSyA-dXCBeljE765qfaOBRtUlXLHBl26Y1tU",
+  apiKey: "AIzaSyCqQSfmsv0ruNWFoHEG93bTBpJxMbww8nM",
   authDomain: "holepuncher-constr.firebaseapp.com",
   databaseURL: "https://holepuncher-constr-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "holepuncher-constr",
@@ -999,7 +1056,10 @@ function buildInfoContent() {
     '</ul><h2>' + t('gameInfoTitle') + '</h2><ul><li>' + t('rtpInfo') + '</li><li>' + t('betInfo') + '</li><li>' + t('leaderboardRule') + '</li></ul>' +
     '<p style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:15px;">' + t('disclaimer') + ' | ' + GAME_VERSION + '</p>' +
     '<button class="close-btn" id="closeInfo">' + t('close') + '</button>';
-  document.getElementById('closeInfo').addEventListener('click', () => document.getElementById('infoModal').classList.remove('show'));
+  document.getElementById('closeInfo').addEventListener('click', () => {
+    document.getElementById('infoModal').classList.remove('show');
+    if (window._infoPaused) { window._infoPaused = false; gameRunning = true; requestAnimationFrame(gameLoop); }
+  });
 }
 
 function updateLanguage() {
@@ -1179,6 +1239,11 @@ function updateStats() {
   document.getElementById('ballsLeft').textContent = gameState.numBalls - gameState.ballsSpawned + gameState.balls.length;
   document.getElementById('winDisplay').textContent = '$' + gameState.totalWin;
   document.getElementById('progValue').textContent = '×' + gameState.progressive;
+  const isMobile = window.innerWidth <= 500;
+  const nickText = isMobile
+    ? '🎮 ' + currentNick + '   P:' + gameState.progressive + '  T:' + gameState.timeoutCount
+    : '🎮 ' + currentNick;
+  document.getElementById('nickIngame').textContent = nickText;
   
   // Timeout dots - toggle class only, no DOM rebuild
   const dots = document.getElementById('timeoutBar').children;
@@ -1306,10 +1371,17 @@ async function startGame(seed) {
   if (!seed && !replayMode) {
     // Get seed from server
     try {
+      // Provably fair: generate clientSeed, send only hash
+      const clientSeed = Math.floor(Math.random() * 0x7FFFFFFF);
+      currentClientSeed = clientSeed;
+      const enc = new TextEncoder();
+      const buf = await crypto.subtle.digest('SHA-256', enc.encode(clientSeed.toString()));
+      const clientSeedHash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+
       const response = await fetch(`${SERVER_URL}/new_game`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nick: currentNick, ballCount: numBalls })
+        body: JSON.stringify({ nick: currentNick, ballCount: numBalls, clientSeedHash })
       });
       if (!response.ok) {
         const error = await response.json();
@@ -1318,10 +1390,24 @@ async function startGame(seed) {
       }
       const data = await response.json();
       currentGameId = data.gameId;
-      seed = data.seed;
+      currentServerSeedHash = data.serverSeedHash || null;
       demoBalance = data.balance;
       document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
-      console.log('✅ Game started:', data);
+      if (currentServerSeedHash) {
+        document.getElementById('seedDisplay').textContent = '🔒 hash: ' + currentServerSeedHash.substring(0, 16) + '...';
+      }
+
+      // Stage 2: reveal clientSeed, get finalSeed
+      const revealResp = await fetch(`${SERVER_URL}/reveal_seed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: data.gameId, clientSeed })
+      });
+      if (!revealResp.ok) { alert('reveal_seed failed'); return; }
+      const revealData = await revealResp.json();
+      seed = revealData.finalSeed;
+
+      console.log('✅ Game started, finalSeed:', seed);
     } catch (err) {
       alert('Cannot connect to server: ' + err.message);
       return;
@@ -1337,11 +1423,20 @@ async function startGame(seed) {
   document.getElementById('ballCountInput').disabled = true;
   document.getElementById('result').classList.remove('show');
   document.getElementById('replayLink').style.display = 'none';
+  document.getElementById('resultFooter').style.display = 'none';
+  document.getElementById('verifyLinkBtn').style.display = 'none';
+  document.getElementById('seedDisplayResult').textContent = '';
+  document.getElementById('verifyLinkMobile').style.display = 'none';
+  document.getElementById('replayBtnMobile').style.display = 'none';
+  document.getElementById('desktopGameLinks').style.display = 'none';
+  document.getElementById('seedDisplayDesk').textContent = '';
+  document.getElementById('verifyLinkDesk').style.display = 'none';
   
   console.log('🎮 Starting game: seed=' + currentSeed + ', balls=' + numBalls);
   
-  // Show seed and speak phrase
-  document.getElementById('seedDisplay').textContent = t('seed') + ': ' + currentSeed;
+  // Show seed hashed and speak phrase
+  const hashSeed = s => { let h = 0; for(let i=0; i<s.toString().length; i++) h = (Math.imul(31,h)+s.toString().charCodeAt(i))|0; return (h>>>0).toString(16).padStart(8,'0').toUpperCase(); };
+  document.getElementById('seedDisplay').textContent = t('seed') + ': #' + hashSeed(currentSeed);
   speakPhrase();
   
   gameLoop();
@@ -1370,6 +1465,25 @@ async function endGame() {
       if (data.valid) {
         demoBalance = data.newBalance;
         document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
+        // Provably fair: reveal serverSeed
+        if (data.serverSeed !== undefined) {
+          const hashSeed = s => { let h = 0; for(let i=0; i<s.toString().length; i++) h = (Math.imul(31,h)+s.toString().charCodeAt(i))|0; return (h>>>0).toString(16).padStart(8,'0').toUpperCase(); };
+          verifyGame(data.serverSeed, data.serverSeedHash, data.clientSeed, data.finalSeed, true).then(ok => {
+            const label = (ok ? '✅ ' : '❌ ') + 'seed: #' + hashSeed(data.serverSeed);
+            document.getElementById('seedDisplay').textContent = label;
+            document.getElementById('seedDisplayResult').textContent = label;
+            document.getElementById('seedDisplayDesk').textContent = label;
+            document.getElementById('verifyLinkDesk').style.display = 'inline';
+            document.getElementById('verifyLinkDesk').onclick = (e) => { e.preventDefault(); verifyGame(data.serverSeed, data.serverSeedHash, data.clientSeed, data.finalSeed, false); };
+            if (!ok) alert('❌ PROVABLY FAIR VERIFICATION FAILED!');
+          });
+          document.getElementById('verifyLink').style.display = 'inline';
+          document.getElementById('verifyLink').onclick = () => verifyGame(data.serverSeed, data.serverSeedHash, data.clientSeed, data.finalSeed, false);
+          document.getElementById('verifyLinkBtn').style.display = 'inline';
+          document.getElementById('verifyLinkBtn').onclick = (e) => { e.preventDefault(); verifyGame(data.serverSeed, data.serverSeedHash, data.clientSeed, data.finalSeed, false); };
+          document.getElementById('verifyLinkMobile').style.display = 'inline';
+          document.getElementById('verifyLinkMobile').onclick = (e) => { e.preventDefault(); verifyGame(data.serverSeed, data.serverSeedHash, data.clientSeed, data.finalSeed, false); };
+        }
         console.log('✅ Validated:', data);
       } else {
         console.error('❌ Validation failed:', data);
@@ -1383,8 +1497,16 @@ async function endGame() {
   
   // Replay URL
   const replayUrl = `${location.origin}${location.pathname}?replay=1&seed=${currentSeed}&balls=${gameState.numBalls}`;
-  document.getElementById('replayBtn').onclick = () => { navigator.clipboard.writeText(replayUrl); };
+  document.getElementById('replayBtn').onclick = () => { copyToClipboard(replayUrl); };
+  document.getElementById('replayLinkDesk').onclick = (e) => { e.preventDefault(); copyToClipboard(replayUrl); };
+  document.getElementById('desktopGameLinks').style.display = 'block';
+  document.getElementById('seedDisplayDesk').textContent = '⏳ verifying...';
   document.getElementById('replayLink').style.display = 'block';
+  document.getElementById('replayBtnResult').onclick = (e) => { e.preventDefault(); copyToClipboard(replayUrl); };
+  document.getElementById('resultFooter').style.display = 'block';
+  // Mobile footer
+  document.getElementById('replayBtnMobile').style.display = 'inline';
+  document.getElementById('replayBtnMobile').onclick = (e) => { e.preventDefault(); copyToClipboard(replayUrl); };
   
   // Submit to Firebase leaderboard
   if (!replayMode) {
@@ -1434,8 +1556,10 @@ document.getElementById('playBtn').onclick = () => {
   startGame(seed);
 };
 
-document.getElementById('result').onclick = () => {
-  document.getElementById('result').classList.remove('show');
+document.getElementById('result').onclick = (e) => {
+  if (e.target === document.getElementById('result')) {
+    document.getElementById('result').classList.remove('show');
+  }
 };
 
 // Sound toggle (4 modes)
@@ -1445,8 +1569,16 @@ document.getElementById('soundBtn').addEventListener('click', () => {
 });
 
 // Info modal
-document.getElementById('infoBtn').addEventListener('click', () => document.getElementById('infoModal').classList.add('show'));
-document.getElementById('infoModal').addEventListener('click', e => { if (e.target === document.getElementById('infoModal')) document.getElementById('infoModal').classList.remove('show'); });
+document.getElementById('infoBtn').addEventListener('click', () => {
+  if (gameRunning) { gameRunning = false; window._infoPaused = true; }
+  document.getElementById('infoModal').classList.add('show');
+});
+document.getElementById('infoModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('infoModal')) {
+    document.getElementById('infoModal').classList.remove('show');
+    if (window._infoPaused) { window._infoPaused = false; gameRunning = true; requestAnimationFrame(gameLoop); }
+  }
+});
 
 // Sound test panel (press T to toggle)
 document.addEventListener('keydown', e => {
@@ -1489,7 +1621,7 @@ document.getElementById('langSelect').value = currentLang;
 // Initialize Firebase
 initFirebase();
 
-console.log('Ball Rush Interactive v1.0.2 loaded');
+console.log('Ball Rush Interactive v1.0.3 loaded');
 
 // Align side-panel top with canvas top
 function alignSidePanel() {
@@ -1592,6 +1724,79 @@ Max Prog: ×${s.progressiveMax}`;
 
 alignSidePanel();
 window.addEventListener('resize', alignSidePanel);
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => copyFallback(text));
+  } else {
+    copyFallback(text);
+  }
+}
+function copyFallback(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+// Provably fair verification
+async function verifyGame(serverSeed, serverSeedHash, clientSeed, finalSeed, silent = false) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(serverSeed.toString()));
+  const computed = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  const hashOk = computed === serverSeedHash;
+  const computedFinal = (serverSeed ^ clientSeed) % 0x7FFFFFFF || 1;
+  const seedOk = computedFinal === finalSeed;
+  const ok = hashOk && seedOk;
+  if (!silent) {
+    if (ok) {
+      alert('✅ VERIFIED!\n\nServerSeed: ' + serverSeed + '\nClientSeed: ' + clientSeed + '\nFinalSeed: ' + finalSeed + '\n\nHash ✓  FinalSeed ✓\nGame was provably fair!');
+    } else {
+      alert('❌ VERIFICATION FAILED!\n\nHash: ' + (hashOk ? '✓' : '✗') + '\nFinalSeed: ' + (seedOk ? '✓' : '✗'));
+    }
+  }
+  return ok;
+}
+
 </script>
+<div id="statsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:500; justify-content:center; align-items:center;">
+  <div style="background:#1a3a2a; border:2px solid #ffd700; border-radius:16px; padding:20px; width:90%; max-width:380px; max-height:85vh; overflow-y:auto; color:#fff;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <span style="font-size:1.2rem; font-weight:bold; color:#ffd700;">📊 STATISTICS</span>
+      <button onclick="closeStatsModal()" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">✕</button>
+    </div>
+    <div id="statsModalContent" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
+  </div>
+</div>
+
+<script>
+function openStatsModal() {
+  const sp = document.querySelector('.side-panel');
+  const content = document.getElementById('statsModalContent');
+  content.innerHTML = '';
+  sp.querySelectorAll('.sb').forEach(sb => {
+    const label = sb.querySelector('.sl') ? sb.querySelector('.sl').textContent : '';
+    const val = sb.querySelector('.sv') ? sb.querySelector('.sv').textContent : '';
+    content.innerHTML += `<div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:8px;">
+      <div style="font-size:0.65rem; color:#8fb;">${label}</div>
+      <div style="font-weight:bold; font-size:1rem;">${val}</div>
+    </div>`;
+  });
+  const modal = document.getElementById('statsModal');
+  modal.style.display = 'flex';
+}
+function closeStatsModal() {
+  document.getElementById('statsModal').style.display = 'none';
+  if (window._statsPaused) { window._statsPaused = false; gameRunning = true; requestAnimationFrame(gameLoop); }
+}
+</script>
+<div id="mobileFooter" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:rgba(0,0,0,0.85); padding:8px 12px; gap:16px; align-items:center; justify-content:center; z-index:200; font-size:12px;">
+  <a href="#" id="verifyLinkMobile" style="color:#4af; font-family:monospace; display:none;">✅ Verify</a>
+  <a href="#" id="replayBtnMobile" style="color:#88f; display:none;">📋 Copy Replay</a>
+</div>
+
 </body>
 </html>
