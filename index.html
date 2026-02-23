@@ -325,6 +325,7 @@
     <label>GOAL_R: <input id="simGoalR" value="" style="width:50px"></label>
     <label>Coef: <input id="simCoef" value="1" style="width:50px"></label>
     <button id="simRun">Run</button>
+    <button id="simStop" style="display:none">Stop</button>
     <pre id="simOut"></pre>
   </div>
 
@@ -1635,7 +1636,13 @@ function alignSidePanel() {
 }
 // ===== SIMULATION (debug) =====
 if (debugMode) {
+  document.getElementById('simStop').addEventListener('click', () => { simStopped = true; });
+
+  let simStopped = false;
   document.getElementById('simRun').addEventListener('click', () => {
+    simStopped = false;
+    const stopBtn = document.getElementById('simStop');
+    stopBtn.style.display = 'inline';
     const numBalls = parseInt(document.getElementById('simBalls').value) || 1000000;
     const seedVal = document.getElementById('simSeed').value ? parseInt(document.getElementById('simSeed').value) : Math.floor(Date.now()/1000);
     const perSession = parseInt(document.getElementById('simSession').value) || 0;
@@ -1681,10 +1688,12 @@ Max Prog: ×${s.progressiveMax}`;
         done = state.stats.ballsFired;
         out.textContent = formatStats(state.stats, state.totalWin, '⏳');
         
-        if (!state.finished) {
+        if (!state.finished && !simStopped) {
           setTimeout(runChunk, 0);
         } else {
-          out.textContent = formatStats(state.stats, state.totalWin, '✅');
+          stopBtn.style.display = 'none';
+          const prefix = simStopped ? '🛑' : '✅';
+          out.textContent = formatStats(state.stats, state.totalWin, prefix);
         }
       }
       runChunk();
@@ -1705,9 +1714,10 @@ Max Prog: ×${s.progressiveMax}`;
         }
         out.textContent = `Running sessions... ${i}/${sessions} (${Math.round(i/sessions*100)}%)`;
         
-        if (i < sessions) {
+        if (i < sessions && !simStopped) {
           setTimeout(runSession, 0);
         } else {
+          stopBtn.style.display = 'none';
           rtps.sort((a,b) => a - b);
           const n = rtps.length;
           const mean = rtps.reduce((a,b) => a+b, 0) / n;
