@@ -579,8 +579,6 @@ function applyCoef(coef) {
     CONFIG.MAX_TICKS_PER_BALL = 600;
   }
 }
-applyCoef(urlCoef);
-
 function dist(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay;
   return Math.sqrt(dx * dx + dy * dy);
@@ -886,6 +884,7 @@ const fraudMode = urlParams.has('fraud');
 const urlSeed = urlParams.get('seed') ? parseInt(urlParams.get('seed')) : null;
 const urlBalls = parseInt(urlParams.get('balls') || '100');
 const urlCoef = parseFloat(urlParams.get('coef') || '1') || 1;
+applyCoef(urlCoef);
 
 if (debugMode) { document.getElementById('simPanel').style.display = 'block'; document.body.classList.add('debug-mode'); }
 
