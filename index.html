@@ -279,6 +279,7 @@
     <label>Seed: <input id="simSeed" value=""></label><br>
     <label>Per session: <input id="simSession" value="0"></label>
     <label>GOAL_R: <input id="simGoalR" value="" style="width:50px"></label>
+    <label>Coef: <input id="simCoef" value="1" style="width:50px"></label>
     <button id="simRun">Run</button>
     <pre id="simOut"></pre>
   </div>
@@ -562,6 +563,23 @@ const CONFIG = {
   BET_PER_BALL: 5,
   MAX_TICKS_PER_BALL: 600
 };
+
+function applyCoef(coef) {
+  if (coef > 1) {
+    CONFIG.SPEED = 0.05;
+    CONFIG.COUNTDOWN = Math.round(45 * coef);
+    CONFIG.SPAWN_INTERVAL = Math.round(60 * coef);
+    CONFIG.SPAWN_COOLDOWN = Math.round(60 * coef);
+    CONFIG.MAX_TICKS_PER_BALL = Math.round(600 * coef);
+  } else if (coef < 1) {
+    CONFIG.SPEED = 0.05 * coef;
+    CONFIG.COUNTDOWN = 45;
+    CONFIG.SPAWN_INTERVAL = 60;
+    CONFIG.SPAWN_COOLDOWN = 60;
+    CONFIG.MAX_TICKS_PER_BALL = 600;
+  }
+}
+applyCoef(urlCoef);
 
 function dist(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay;
@@ -867,6 +885,7 @@ const replayMode = urlParams.has('replay');
 const fraudMode = urlParams.has('fraud');
 const urlSeed = urlParams.get('seed') ? parseInt(urlParams.get('seed')) : null;
 const urlBalls = parseInt(urlParams.get('balls') || '100');
+const urlCoef = parseFloat(urlParams.get('coef') || '1') || 1;
 
 if (debugMode) { document.getElementById('simPanel').style.display = 'block'; document.body.classList.add('debug-mode'); }
 
@@ -1491,6 +1510,8 @@ if (debugMode) {
     const perSession = parseInt(document.getElementById('simSession').value) || 0;
     const goalR = document.getElementById('simGoalR').value;
     if (goalR) CONFIG.GOAL_R = parseFloat(goalR);
+    const simCoef = parseFloat(document.getElementById('simCoef').value) || 1;
+    applyCoef(simCoef);
     const out = document.getElementById('simOut');
     const BET = GameEngine.BET_PER_BALL;
     
