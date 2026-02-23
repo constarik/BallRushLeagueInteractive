@@ -279,6 +279,7 @@
     <label>Seed: <input id="simSeed" value=""></label><br>
     <label>Per session: <input id="simSession" value="0"></label>
     <label>GOAL_R: <input id="simGoalR" value="" style="width:50px"></label>
+    <label>Speed: <input id="simSpeed" value="1" style="width:50px"></label>
     <button id="simRun">Run</button>
     <pre id="simOut"></pre>
   </div>
@@ -546,7 +547,7 @@ class JavaRandom {
 const CONFIG = {
   FIELD: 9,
   BALL_R: 0.2,
-  SPEED: 0.05,
+  SPEED: 0.05 * urlSpeed,
   GOAL_R: 1.02,
   CENTER_R: 0.225,
   CENTER_X: 4.5,
@@ -867,6 +868,7 @@ const replayMode = urlParams.has('replay');
 const fraudMode = urlParams.has('fraud');
 const urlSeed = urlParams.get('seed') ? parseInt(urlParams.get('seed')) : null;
 const urlBalls = parseInt(urlParams.get('balls') || '100');
+const urlSpeed = parseFloat(urlParams.get('speed') || '1') || 1;
 
 if (debugMode) { document.getElementById('simPanel').style.display = 'block'; document.body.classList.add('debug-mode'); }
 
@@ -1491,6 +1493,8 @@ if (debugMode) {
     const perSession = parseInt(document.getElementById('simSession').value) || 0;
     const goalR = document.getElementById('simGoalR').value;
     if (goalR) CONFIG.GOAL_R = parseFloat(goalR);
+    const simSpeed = parseFloat(document.getElementById('simSpeed').value) || 1;
+    CONFIG.SPEED = 0.05 * simSpeed;
     const out = document.getElementById('simOut');
     const BET = GameEngine.BET_PER_BALL;
     
