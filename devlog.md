@@ -1,5 +1,51 @@
 # Ball Rush League — Launch Devlog
 
+## 🔐 v8.0.57 — Provably Fair & Mobile Polish
+
+### Provably Fair Protocol
+
+Ball Rush League is now provably fair — every game result can be independently verified by the player.
+
+The system uses a two-stage seed exchange protocol:
+
+1. Before the game starts, the client generates a random `clientSeed` and sends only its SHA256 hash to the server.
+2. The server generates its own `serverSeed` and returns only its SHA256 hash.
+3. Neither party knows the other's seed before the game begins.
+4. The client reveals `clientSeed` via `/reveal_seed` — server verifies the hash and computes `finalSeed = serverSeed XOR clientSeed`.
+5. After the game, `/result` reveals `serverSeed` — the player can verify both hashes and recompute `finalSeed` independently.
+
+This means neither the server nor the player can manipulate the outcome. The game is deterministic given `finalSeed`, and both parties committed to their seeds before it was computed.
+
+After each game, the seed is displayed as `✅ seed: #XXXXXXXX` with a **Verify** button. On desktop it appears under the leaderboard in the side panel. On mobile it appears in a fixed footer and in the result panel.
+
+### Engine v9 — Mechanical Collision Physics
+
+All ball deaths now trigger a proper mechanical bounce impulse on the surviving ball:
+
+- Direction: along the collision normal (away from the dead ball)
+- Speed: reset to `CONFIG.SPEED`
+- Dispersion: random angle applied via `randomizeBounce()`
+
+Previously only special+special collisions had this behavior. Now all collision types (special kills normal, normal kills normal) produce the same physical response.
+
+### Mobile Responsive Improvements
+
+- Stats modal accessible via 📊 button (desktop stat panel hidden on mobile)
+- Progressive multiplier shown inline in nick row on mobile: `🎮 NitroBlинчик   P:4  T:2`
+- Fixed footer with Verify and Copy Replay after each game
+- Result panel closes only on background tap or ✕ button — no accidental dismissal
+- Clipboard fallback via `execCommand` for browsers that block `navigator.clipboard`
+- All scrollbars hidden globally
+
+### Desktop Improvements
+
+- Seed / Verify / Copy Replay moved under leaderboard in side panel
+- INFO button styled: white text on blue background
+- Empty leaderboard div hidden (was showing as a mysterious green bar)
+- Duplicate Firebase SDK includes removed
+
+---
+
 ## 🚀 v6.1 Release — The League Is Open!
 
 Ball Rush League is live! A physics-based arcade slot where balls bounce around a football field, scoring goals in corner pockets. But this isn't your typical slot — there's no reels, no paylines. Just pure physics and strategy.
@@ -42,8 +88,5 @@ The physics engine runs deterministic simulation with seeded RNG (Java-compatibl
 - More special ball types
 - Tournament mode
 - Achievement system
-- Mobile optimization
 
-Play it now and see if you can top the weekly board.
-
-⚽ **Ball Rush League v6.1** — constrik.itch.io/ball-rush-league
+⚽ **Ball Rush League** — https://constarik.github.io/BallRushLeague/
