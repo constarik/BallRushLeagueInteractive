@@ -1506,7 +1506,10 @@ async function startGame(seed) {
   applySize(parseFloat(document.getElementById('paramSize').value) || 1);
   applyRecharge(parseFloat(document.getElementById('paramRecharge').value) || 1);
   applyCoef(parseFloat(document.getElementById('paramCoef').value) || 1);
-  currentBetPerBall = parseFloat(document.getElementById('paramBaseBet').value) || 5;
+  const size     = parseFloat(document.getElementById('paramSize').value) || 1;
+  const recharge = parseFloat(document.getElementById('paramRecharge').value) || 1;
+  const coef     = parseFloat(document.getElementById('paramCoef').value) || 1;
+  currentBetPerBall = Math.round(BASE_BET * getRtp(size, recharge, coef) / BASE_RTP * 100) / 100;
   currentNumBalls = numBalls;
   gameState = GameEngine.createInitialState(currentSeed, numBalls);
   gameRunning = true;
