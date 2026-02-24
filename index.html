@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ball Rush League Interactive v1.1.7</title>
+  <title>Ball Rush League Interactive v1.2.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
@@ -221,7 +221,7 @@
         <span class="lang-flag" data-lang="zh">🇨🇳</span>
       </div>
       <h1>⚽ BALL RUSH</h1>
-      <div class="subtitle">LEAGUE INTERACTIVE v1.1.7</div>
+      <div class="subtitle">LEAGUE INTERACTIVE v1.2.0</div>
       <label data-i18n="nickLabel">YOUR NICK</label>
       <div class="nick-display" id="nickDisplay"></div>
       <div class="nick-shuffle" id="nickShuffle" title="Random">🎲</div>
@@ -376,7 +376,7 @@
 // ========================================
 // Ball Rush League v7.1.0 - Single Engine Architecture
 // ========================================
-const GAME_VERSION = 'v1.1.7';
+const GAME_VERSION = 'v1.2.0';
 const SERVER_URL = 'https://ball-rush-server.onrender.com';
 
 // ===== AUDIO DATA (base64) =====
@@ -1473,7 +1473,7 @@ async function startGame(seed) {
       const response = await fetch(`${SERVER_URL}/new_game`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nick: currentNick, ballCount: numBalls, clientSeedHash })
+        body: JSON.stringify({ nick: currentNick, ballCount: numBalls, clientSeedHash, betPerBall: currentBetPerBall })
       });
       if (!response.ok) {
         const error = await response.json();
@@ -1483,7 +1483,7 @@ async function startGame(seed) {
       const data = await response.json();
       currentGameId = data.gameId;
       currentServerSeedHash = data.serverSeedHash || null;
-      demoBalance = data.balance - currentNumBalls * (currentBetPerBall - 5);
+      demoBalance = data.balance;
       document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
       if (currentServerSeedHash) {
         document.getElementById('seedDisplay').textContent = '🔒 hash: ' + currentServerSeedHash.substring(0, 16) + '...';
@@ -1564,7 +1564,7 @@ async function endGame() {
       });
       const data = await response.json();
       if (data.valid) {
-        demoBalance = data.newBalance - currentNumBalls * (currentBetPerBall - 5);
+        demoBalance = data.newBalance;
         document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
         // Provably fair: reveal serverSeed
         if (data.serverSeed !== undefined) {
