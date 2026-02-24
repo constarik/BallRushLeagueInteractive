@@ -221,7 +221,7 @@
         <span class="lang-flag" data-lang="zh">🇨🇳</span>
       </div>
       <h1>⚽ BALL RUSH</h1>
-      <div class="subtitle">LEAGUE INTERACTIVE v1.0.8</div>
+      <div class="subtitle">LEAGUE INTERACTIVE v1.1.2</div>
       <label data-i18n="nickLabel">YOUR NICK</label>
       <div class="nick-display" id="nickDisplay"></div>
       <div class="nick-shuffle" id="nickShuffle" title="Random">🎲</div>
@@ -377,7 +377,7 @@
 // ========================================
 // Ball Rush League v7.1.0 - Single Engine Architecture
 // ========================================
-const GAME_VERSION = 'v1.0.8';
+const GAME_VERSION = 'v1.1.2';
 const SERVER_URL = 'https://ball-rush-server.onrender.com';
 
 // ===== AUDIO DATA (base64) =====
@@ -675,7 +675,7 @@ function updateGameParams() {
   document.getElementById('paramBetDisplay').textContent = 'Bet: $' + bet.toFixed(2) + '/ball';
 }
 
-
+function applyCoef(coef) {
   if (coef > 1) {
     CONFIG.SPEED = 0.05;
     CONFIG.COUNTDOWN = Math.round(45 * coef);
