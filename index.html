@@ -301,11 +301,10 @@
         <div class="param-val" id="paramCoefVal">1.0</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-        <div class="param-rtp" id="paramRtpDisplay">RTP: 95.74%</div>
-        <div class="param-bet" id="paramBetDisplay">Bet: $5/ball</div>
-        <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
-          <span style="font-size:11px;color:#aaa;">Base $</span>
-          <input type="number" id="paramBaseBet" value="5" min="0.01" step="0.01" style="width:50px;background:#1a3a2a;color:#ffd700;border:1px solid #3a7a4a;border-radius:4px;padding:2px 4px;font-size:12px;text-align:center;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span style="font-size:11px;color:#aaa;">Bet $</span>
+          <input type="number" id="paramBaseBet" readonly value="5" style="width:55px;background:#1a3a2a;color:#ffd700;border:1px solid #3a7a4a;border-radius:4px;padding:2px 4px;font-size:13px;font-weight:bold;text-align:center;cursor:default;">
+          <span style="font-size:11px;color:#aaa;">/ball</span>
         </div>
       </div>
     </div>
@@ -665,14 +664,12 @@ function updateGameParams() {
   const size     = parseFloat(document.getElementById('paramSize').value);
   const recharge = parseFloat(document.getElementById('paramRecharge').value);
   const coef     = parseFloat(document.getElementById('paramCoef').value);
-  const baseBet  = parseFloat(document.getElementById('paramBaseBet').value) || BASE_BET;
-  document.getElementById('paramSizeVal').textContent    = size.toFixed(1);
+  document.getElementById('paramSizeVal').textContent     = size.toFixed(1);
   document.getElementById('paramRechargeVal').textContent = recharge.toFixed(1);
-  document.getElementById('paramCoefVal').textContent    = coef.toFixed(1);
+  document.getElementById('paramCoefVal').textContent     = coef.toFixed(1);
   const rtp = getRtp(size, recharge, coef);
-  const bet = Math.round(baseBet * rtp / BASE_RTP * 100) / 100;
-  document.getElementById('paramRtpDisplay').textContent = 'RTP: ' + rtp.toFixed(2) + '%';
-  document.getElementById('paramBetDisplay').textContent = 'Bet: $' + bet.toFixed(2) + '/ball';
+  const bet = Math.round(BASE_BET * rtp / BASE_RTP * 100) / 100;
+  document.getElementById('paramBaseBet').value = bet.toFixed(2);
 }
 
 function applyCoef(coef) {
@@ -1006,6 +1003,7 @@ function renderLeaderboard(entries) {
 }
 let currentGameId = null;
 let demoBalance = 10000;
+let currentBetPerBall = 5;
 let particles = [];
 let leftGoalFlash = 0, rightGoalFlash = 0;
 
@@ -1027,7 +1025,7 @@ document.getElementById('paramSize').value     = urlSize;
 document.getElementById('paramRecharge').value = urlRecharge;
 document.getElementById('paramCoef').value     = urlCoef;
 updateGameParams();
-['paramSize','paramRecharge','paramCoef','paramBaseBet'].forEach(id => {
+['paramSize','paramRecharge','paramCoef'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateGameParams);
 });
 
@@ -1479,7 +1477,7 @@ async function startGame(seed) {
       const data = await response.json();
       currentGameId = data.gameId;
       currentServerSeedHash = data.serverSeedHash || null;
-      demoBalance = data.balance;
+      demoBalance = data.balance - numBalls * (currentBetPerBall - 5);
       document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
       if (currentServerSeedHash) {
         document.getElementById('seedDisplay').textContent = '🔒 hash: ' + currentServerSeedHash.substring(0, 16) + '...';
@@ -1507,10 +1505,14 @@ async function startGame(seed) {
   applySize(parseFloat(document.getElementById('paramSize').value) || 1);
   applyRecharge(parseFloat(document.getElementById('paramRecharge').value) || 1);
   applyCoef(parseFloat(document.getElementById('paramCoef').value) || 1);
+  currentBetPerBall = parseFloat(document.getElementById('paramBaseBet').value) || 5;
   gameState = GameEngine.createInitialState(currentSeed, numBalls);
   gameRunning = true;
   particles = [];
-  
+
+  ['paramSize','paramRecharge','paramCoef'].forEach(id =>
+    document.getElementById(id).disabled = true);
+
   document.getElementById('playBtn').disabled = true;
   document.getElementById('ballCountInput').disabled = true;
   document.getElementById('result').classList.remove('show');
@@ -1538,6 +1540,8 @@ async function endGame() {
   gameRunning = false;
   document.getElementById('playBtn').disabled = false;
   document.getElementById('ballCountInput').disabled = false;
+  ['paramSize','paramRecharge','paramCoef'].forEach(id =>
+    document.getElementById(id).disabled = false);
   
   const fraudBonus = document.getElementById('fraudCheck').checked ? 1000 : 0;
   const reportedWin = gameState.totalWin + fraudBonus;
@@ -1555,7 +1559,7 @@ async function endGame() {
       });
       const data = await response.json();
       if (data.valid) {
-        demoBalance = data.newBalance;
+        demoBalance = data.newBalance - numBalls * (currentBetPerBall - 5);
         document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
         // Provably fair: reveal serverSeed
         if (data.serverSeed !== undefined) {
@@ -1839,13 +1843,26 @@ Max Prog: ×${s.progressiveMax}`;
       } else if (msg.type === 'scan_done') {
         scanBtn.disabled = false; stopBtn.style.display = 'none';
         const prefix = msg.stopped ? '🛑' : '✅';
-        const top = msg.top10.map(r =>
-          `  s=${r.size} r=${r.recharge} c=${r.coef} → ${r.rtp}%`).join('\n');
-        const bot = msg.bot10.map(r =>
-          `  s=${r.size} r=${r.recharge} c=${r.coef} → ${r.rtp}%`).join('\n');
+        const BET = 5;
+        const top = msg.top10.map(r => {
+          const tableRtp = getRtp(r.size, r.recharge, r.coef);
+          const actualRtp = tableRtp > 0 ? (r.rtp / tableRtp * BASE_RTP).toFixed(1) : '?';
+          return `  s=${r.size} r=${r.recharge} c=${r.coef} → raw:${r.rtp}% actual:${actualRtp}%`;
+        }).join('\n');
+        const bot = msg.bot10.map(r => {
+          const tableRtp = getRtp(r.size, r.recharge, r.coef);
+          const actualRtp = tableRtp > 0 ? (r.rtp / tableRtp * BASE_RTP).toFixed(1) : '?';
+          return `  s=${r.size} r=${r.recharge} c=${r.coef} → raw:${r.rtp}% actual:${actualRtp}%`;
+        }).join('\n');
+        const totalBet = msg.totalBet.toFixed(0);
+        const totalWin = msg.totalWin.toFixed(0);
+        const overallRaw = msg.totalBet > 0 ? (msg.totalWin / msg.totalBet * 100).toFixed(2) : '?';
         out.textContent =
 `${prefix} SCAN DONE — ${msg.n} runs × ${ballsPerRun} balls
---- RTP distribution ---
+Total Bet:  $${totalBet}
+Total Win:  $${totalWin}
+Overall RTP: ${overallRaw}%
+--- raw RTP distribution (vs $5/ball) ---
 Mean:   ${msg.mean}%
 Median: ${msg.med}%
 StdDev: ${msg.std}%

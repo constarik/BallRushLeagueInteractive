@@ -269,6 +269,7 @@ self.onmessage = function(e) {
 
     const results = [];
     let i = 0;
+    let scanTotalBet = 0, scanTotalWin = 0;
 
     function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -287,7 +288,7 @@ self.onmessage = function(e) {
         const bot10 = [...results].sort((a,b)=>a.rtp-b.rtp).slice(0,10);
 
         self.postMessage({ type: 'scan_done', stopped,
-          n, mean: mean.toFixed(2), std: std.toFixed(2),
+          n, mean: mean.toFixed(2), rawMean: mean, std: std.toFixed(2),
           med: med.toFixed(2), min: rtps[0].toFixed(2), max: rtps[n-1].toFixed(2),
           p5:  rtps[Math.floor(n*.05)].toFixed(2),
           p25: rtps[Math.floor(n*.25)].toFixed(2),
@@ -296,7 +297,8 @@ self.onmessage = function(e) {
           over200: rtps.filter(r=>r>200).length,
           over150: rtps.filter(r=>r>150).length,
           under80: rtps.filter(r=>r<80).length,
-          top10, bot10
+          top10, bot10,
+          totalBet: scanTotalBet, totalWin: scanTotalWin
         });
         return;
       }
@@ -321,7 +323,11 @@ self.onmessage = function(e) {
       };
       while (!state.finished) state = tick(state);
 
-      const rtp = state.totalWin / (ballsPerRun * BET) * 100;
+      const bet = ballsPerRun * BET;
+      const win = state.totalWin;
+      scanTotalBet += bet;
+      scanTotalWin += win;
+      const rtp = win / bet * 100;
       results.push({ size, recharge, coef, seed, rtp: Math.round(rtp*100)/100 });
       i++;
 
