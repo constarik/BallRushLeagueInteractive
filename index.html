@@ -1004,6 +1004,7 @@ function renderLeaderboard(entries) {
 let currentGameId = null;
 let demoBalance = 10000;
 let currentBetPerBall = 5;
+let currentNumBalls = 100;
 let particles = [];
 let leftGoalFlash = 0, rightGoalFlash = 0;
 
@@ -1477,7 +1478,7 @@ async function startGame(seed) {
       const data = await response.json();
       currentGameId = data.gameId;
       currentServerSeedHash = data.serverSeedHash || null;
-      demoBalance = data.balance - numBalls * (currentBetPerBall - 5);
+      demoBalance = data.balance - currentNumBalls * (currentBetPerBall - 5);
       document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
       if (currentServerSeedHash) {
         document.getElementById('seedDisplay').textContent = '🔒 hash: ' + currentServerSeedHash.substring(0, 16) + '...';
@@ -1506,6 +1507,7 @@ async function startGame(seed) {
   applyRecharge(parseFloat(document.getElementById('paramRecharge').value) || 1);
   applyCoef(parseFloat(document.getElementById('paramCoef').value) || 1);
   currentBetPerBall = parseFloat(document.getElementById('paramBaseBet').value) || 5;
+  currentNumBalls = numBalls;
   gameState = GameEngine.createInitialState(currentSeed, numBalls);
   gameRunning = true;
   particles = [];
@@ -1559,7 +1561,7 @@ async function endGame() {
       });
       const data = await response.json();
       if (data.valid) {
-        demoBalance = data.newBalance - numBalls * (currentBetPerBall - 5);
+        demoBalance = data.newBalance - currentNumBalls * (currentBetPerBall - 5);
         document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
         // Provably fair: reveal serverSeed
         if (data.serverSeed !== undefined) {
