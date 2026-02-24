@@ -1650,6 +1650,13 @@ document.getElementById('nickShuffle').onclick = () => {
 document.getElementById('startPlayBtn').onclick = () => {
   localStorage.setItem('ballrush_nick', currentNick);
   document.getElementById('startOverlay').classList.add('hidden');
+  fetch(`${SERVER_URL}/balance/${currentNick}`)
+    .then(r => r.json())
+    .then(d => {
+      demoBalance = d.balance;
+      document.getElementById('balanceAmount').textContent = '$' + demoBalance.toFixed(2);
+    })
+    .catch(() => {});
 };
 
 document.getElementById('playBtn').onclick = () => {
