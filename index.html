@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ball Rush League Interactive v1.0.11</title>
+  <title>Ball Rush League Interactive v1.1.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
@@ -200,6 +200,14 @@
     .sound-test-panel button:hover { background: rgba(255,215,0,0.3); }
     .sound-test-panel .stp-mp3 { border-color: rgba(0,150,255,0.5); color: #8cf; }
     .sound-test-panel .stp-close { background: rgba(255,0,0,0.2); border-color: #f44; color: #f88; margin-top: 6px; width: 100%; }
+  /* ===== GAME PARAMS SLIDERS ===== */
+  .game-params { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; padding:6px 0; }
+  .param-slider { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:90px; }
+  .param-slider label { font-size:11px; color:#aaa; text-transform:uppercase; letter-spacing:0.5px; }
+  .param-slider .param-val { font-size:13px; color:#ffd700; font-weight:bold; }
+  .param-slider input[type=range] { width:90px; accent-color:#4CAF50; }
+  .param-rtp { font-size:12px; color:#4CAF50; }
+  .param-bet { font-size:11px; color:#ff9800; }
   </style>
 </head>
 <body>
@@ -275,6 +283,27 @@
       </select>
       <button id="infoBtn" style="background:#1a6adb; color:#fff; border:none;">ℹ <span data-i18n="info">INFO</span></button>
       <button id="statsBtn" onclick="openStatsModal()">📊</button>
+    </div>
+    <div class="game-params">
+      <div class="param-slider">
+        <label>⚽ Size</label>
+        <input type="range" id="paramSize" min="1" max="3" step="0.5" value="1">
+        <div class="param-val" id="paramSizeVal">1.0</div>
+      </div>
+      <div class="param-slider">
+        <label>🔋 Recharge</label>
+        <input type="range" id="paramRecharge" min="1" max="4" step="0.5" value="1">
+        <div class="param-val" id="paramRechargeVal">1.0</div>
+      </div>
+      <div class="param-slider">
+        <label>⚡ Coef</label>
+        <input type="range" id="paramCoef" min="1" max="5" step="0.5" value="1">
+        <div class="param-val" id="paramCoefVal">1.0</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <div class="param-rtp" id="paramRtpDisplay">RTP: 95.74%</div>
+        <div class="param-bet" id="paramBetDisplay">Bet: $5/ball</div>
+      </div>
     </div>
     <div class="status" id="status"></div>
     <div class="seed-display" id="seedDisplay" style="display:none;"></div>
@@ -611,7 +640,30 @@ const CONFIG = {
   MAX_TICKS_PER_BALL: 600
 };
 
-function applyCoef(coef) {
+// ===== RTP TABLE (100k balls, step 0.5) =====
+const RTP_TABLE = {"1.0_1.0_1.0":95.74,"1.0_1.0_1.5":161.69,"1.0_1.0_2.0":213.63,"1.0_1.0_2.5":258.55,"1.0_1.0_3.0":286.81,"1.0_1.0_3.5":318.09,"1.0_1.0_4.0":351.21,"1.0_1.0_4.5":377.27,"1.0_1.0_5.0":396.39,"1.0_1.5_1.0":100.18,"1.0_1.5_1.5":170.36,"1.0_1.5_2.0":221.61,"1.0_1.5_2.5":262.69,"1.0_1.5_3.0":295.93,"1.0_1.5_3.5":327.17,"1.0_1.5_4.0":358.73,"1.0_1.5_4.5":385.4,"1.0_1.5_5.0":404.83,"1.0_2.0_1.0":100.19,"1.0_2.0_1.5":177.21,"1.0_2.0_2.0":227.81,"1.0_2.0_2.5":271.37,"1.0_2.0_3.0":303.09,"1.0_2.0_3.5":333.46,"1.0_2.0_4.0":362.61,"1.0_2.0_4.5":391.8,"1.0_2.0_5.0":410.19,"1.0_2.5_1.0":107.34,"1.0_2.5_1.5":184.22,"1.0_2.5_2.0":233.85,"1.0_2.5_2.5":274.64,"1.0_2.5_3.0":307.53,"1.0_2.5_3.5":336.14,"1.0_2.5_4.0":370.03,"1.0_2.5_4.5":396.51,"1.0_2.5_5.0":416.37,"1.0_3.0_1.0":111.2,"1.0_3.0_1.5":188.71,"1.0_3.0_2.0":241.3,"1.0_3.0_2.5":280.4,"1.0_3.0_3.0":313.82,"1.0_3.0_3.5":344.85,"1.0_3.0_4.0":377.68,"1.0_3.0_4.5":402.78,"1.0_3.0_5.0":420.19,"1.0_3.5_1.0":116.82,"1.0_3.5_1.5":196.72,"1.0_3.5_2.0":249.57,"1.0_3.5_2.5":290.52,"1.0_3.5_3.0":318.53,"1.0_3.5_3.5":350.62,"1.0_3.5_4.0":381.57,"1.0_3.5_4.5":408.56,"1.0_3.5_5.0":427.12,"1.0_4.0_1.0":122.3,"1.0_4.0_1.5":201.38,"1.0_4.0_2.0":256.63,"1.0_4.0_2.5":295.45,"1.0_4.0_3.0":325.97,"1.0_4.0_3.5":357.91,"1.0_4.0_4.0":387.12,"1.0_4.0_4.5":412.38,"1.0_4.0_5.0":434.43,"1.5_1.0_1.0":94.21,"1.5_1.0_1.5":156.02,"1.5_1.0_2.0":195.26,"1.5_1.0_2.5":224.78,"1.5_1.0_3.0":244.88,"1.5_1.0_3.5":268.12,"1.5_1.0_4.0":297.04,"1.5_1.0_4.5":320.31,"1.5_1.0_5.0":336.94,"1.5_1.5_1.0":99.5,"1.5_1.5_1.5":160.22,"1.5_1.5_2.0":200.04,"1.5_1.5_2.5":227.4,"1.5_1.5_3.0":252.49,"1.5_1.5_3.5":278.13,"1.5_1.5_4.0":302.03,"1.5_1.5_4.5":324.31,"1.5_1.5_5.0":342.24,"1.5_2.0_1.0":102.25,"1.5_2.0_1.5":169.27,"1.5_2.0_2.0":201.95,"1.5_2.0_2.5":232.4,"1.5_2.0_3.0":255.45,"1.5_2.0_3.5":281.74,"1.5_2.0_4.0":308.42,"1.5_2.0_4.5":330.86,"1.5_2.0_5.0":345.67,"1.5_2.5_1.0":106.19,"1.5_2.5_1.5":174.07,"1.5_2.5_2.0":209.66,"1.5_2.5_2.5":234.63,"1.5_2.5_3.0":261.39,"1.5_2.5_3.5":285.46,"1.5_2.5_4.0":314.32,"1.5_2.5_4.5":335.96,"1.5_2.5_5.0":352.67,"1.5_3.0_1.0":113.79,"1.5_3.0_1.5":179.51,"1.5_3.0_2.0":214.05,"1.5_3.0_2.5":240.94,"1.5_3.0_3.0":267.86,"1.5_3.0_3.5":290.83,"1.5_3.0_4.0":320.45,"1.5_3.0_4.5":340.88,"1.5_3.0_5.0":358.77,"1.5_3.5_1.0":117.61,"1.5_3.5_1.5":182.54,"1.5_3.5_2.0":218.62,"1.5_3.5_2.5":243.99,"1.5_3.5_3.0":271.88,"1.5_3.5_3.5":297.23,"1.5_3.5_4.0":325.46,"1.5_3.5_4.5":349.02,"1.5_3.5_5.0":367.03,"1.5_4.0_1.0":121.02,"1.5_4.0_1.5":186.32,"1.5_4.0_2.0":222.23,"1.5_4.0_2.5":254.28,"1.5_4.0_3.0":276.78,"1.5_4.0_3.5":303.29,"1.5_4.0_4.0":331.37,"1.5_4.0_4.5":353.59,"1.5_4.0_5.0":371.24,"2.0_1.0_1.0":94.1,"2.0_1.0_1.5":145.43,"2.0_1.0_2.0":173.55,"2.0_1.0_2.5":190.98,"2.0_1.0_3.0":212.02,"2.0_1.0_3.5":229.64,"2.0_1.0_4.0":250.12,"2.0_1.0_4.5":269.02,"2.0_1.0_5.0":283.28,"2.0_1.5_1.0":98.84,"2.0_1.5_1.5":150.29,"2.0_1.5_2.0":176.62,"2.0_1.5_2.5":194.46,"2.0_1.5_3.0":214.69,"2.0_1.5_3.5":234.33,"2.0_1.5_4.0":257.51,"2.0_1.5_4.5":275.94,"2.0_1.5_5.0":290.88,"2.0_2.0_1.0":101.93,"2.0_2.0_1.5":158.21,"2.0_2.0_2.0":177.21,"2.0_2.0_2.5":199.29,"2.0_2.0_3.0":219.73,"2.0_2.0_3.5":243.02,"2.0_2.0_4.0":262.32,"2.0_2.0_4.5":283.76,"2.0_2.0_5.0":297.16,"2.0_2.5_1.0":109.12,"2.0_2.5_1.5":160.99,"2.0_2.5_2.0":182.57,"2.0_2.5_2.5":202.17,"2.0_2.5_3.0":223.14,"2.0_2.5_3.5":247.33,"2.0_2.5_4.0":270.85,"2.0_2.5_4.5":289.7,"2.0_2.5_5.0":303.35,"2.0_3.0_1.0":112.76,"2.0_3.0_1.5":161.7,"2.0_3.0_2.0":189.32,"2.0_3.0_2.5":208.95,"2.0_3.0_3.0":230.74,"2.0_3.0_3.5":251.33,"2.0_3.0_4.0":274.15,"2.0_3.0_4.5":294.33,"2.0_3.0_5.0":310.02,"2.0_3.5_1.0":116.84,"2.0_3.5_1.5":165.67,"2.0_3.5_2.0":190.53,"2.0_3.5_2.5":211.61,"2.0_3.5_3.0":234.17,"2.0_3.5_3.5":258.55,"2.0_3.5_4.0":280.85,"2.0_3.5_4.5":301.94,"2.0_3.5_5.0":318.21,"2.0_4.0_1.0":121.12,"2.0_4.0_1.5":170.28,"2.0_4.0_2.0":194.1,"2.0_4.0_2.5":216.95,"2.0_4.0_3.0":240.95,"2.0_4.0_3.5":264,"2.0_4.0_4.0":289.13,"2.0_4.0_4.5":306.53,"2.0_4.0_5.0":322.64,"2.5_1.0_1.0":92.46,"2.5_1.0_1.5":131.07,"2.5_1.0_2.0":143.44,"2.5_1.0_2.5":156.26,"2.5_1.0_3.0":175.68,"2.5_1.0_3.5":189.57,"2.5_1.0_4.0":208.16,"2.5_1.0_4.5":224.36,"2.5_1.0_5.0":234.76,"2.5_1.5_1.0":96.47,"2.5_1.5_1.5":135.96,"2.5_1.5_2.0":149.63,"2.5_1.5_2.5":161.51,"2.5_1.5_3.0":178.84,"2.5_1.5_3.5":195.19,"2.5_1.5_4.0":213.57,"2.5_1.5_4.5":228.66,"2.5_1.5_5.0":241.28,"2.5_2.0_1.0":99.74,"2.5_2.0_1.5":139.04,"2.5_2.0_2.0":152.65,"2.5_2.0_2.5":165.66,"2.5_2.0_3.0":182.88,"2.5_2.0_3.5":202.12,"2.5_2.0_4.0":220.98,"2.5_2.0_4.5":235.63,"2.5_2.0_5.0":249.15,"2.5_2.5_1.0":106.96,"2.5_2.5_1.5":139.63,"2.5_2.5_2.0":156.29,"2.5_2.5_2.5":170.83,"2.5_2.5_3.0":187.48,"2.5_2.5_3.5":208.71,"2.5_2.5_4.0":228.37,"2.5_2.5_4.5":242.4,"2.5_2.5_5.0":254.95,"2.5_3.0_1.0":110.59,"2.5_3.0_1.5":144.28,"2.5_3.0_2.0":160.54,"2.5_3.0_2.5":175.73,"2.5_3.0_3.0":194.55,"2.5_3.0_3.5":214.57,"2.5_3.0_4.0":233.15,"2.5_3.0_4.5":251.6,"2.5_3.0_5.0":261.14,"2.5_3.5_1.0":115.28,"2.5_3.5_1.5":148,"2.5_3.5_2.0":161.64,"2.5_3.5_2.5":180.94,"2.5_3.5_3.0":201.54,"2.5_3.5_3.5":223.05,"2.5_3.5_4.0":239.36,"2.5_3.5_4.5":258.81,"2.5_3.5_5.0":267.78,"2.5_4.0_1.0":122.17,"2.5_4.0_1.5":148.32,"2.5_4.0_2.0":166.66,"2.5_4.0_2.5":183.5,"2.5_4.0_3.0":208.26,"2.5_4.0_3.5":226.59,"2.5_4.0_4.0":245.65,"2.5_4.0_4.5":261.71,"2.5_4.0_5.0":277.47,"3.0_1.0_1.0":88.88,"3.0_1.0_1.5":109.52,"3.0_1.0_2.0":118.02,"3.0_1.0_2.5":122.62,"3.0_1.0_3.0":137.61,"3.0_1.0_3.5":148.79,"3.0_1.0_4.0":162.35,"3.0_1.0_4.5":174.06,"3.0_1.0_5.0":179.66,"3.0_1.5_1.0":92.88,"3.0_1.5_1.5":113.89,"3.0_1.5_2.0":120.4,"3.0_1.5_2.5":127,"3.0_1.5_3.0":141.75,"3.0_1.5_3.5":156.43,"3.0_1.5_4.0":168.79,"3.0_1.5_4.5":178.77,"3.0_1.5_5.0":186.83,"3.0_2.0_1.0":97.05,"3.0_2.0_1.5":117.17,"3.0_2.0_2.0":123.2,"3.0_2.0_2.5":133.66,"3.0_2.0_3.0":148.13,"3.0_2.0_3.5":160.81,"3.0_2.0_4.0":177.14,"3.0_2.0_4.5":186.45,"3.0_2.0_5.0":193.58,"3.0_2.5_1.0":101.11,"3.0_2.5_1.5":119.27,"3.0_2.5_2.0":126.12,"3.0_2.5_2.5":137.43,"3.0_2.5_3.0":151.33,"3.0_2.5_3.5":167.98,"3.0_2.5_4.0":181.18,"3.0_2.5_4.5":193.15,"3.0_2.5_5.0":201.61,"3.0_3.0_1.0":105.84,"3.0_3.0_1.5":122.37,"3.0_3.0_2.0":132.33,"3.0_3.0_2.5":139.7,"3.0_3.0_3.0":156.71,"3.0_3.0_3.5":173.08,"3.0_3.0_4.0":185.85,"3.0_3.0_4.5":201.12,"3.0_3.0_5.0":207.55,"3.0_3.5_1.0":109.59,"3.0_3.5_1.5":123.3,"3.0_3.5_2.0":134.97,"3.0_3.5_2.5":144.6,"3.0_3.5_3.0":163.91,"3.0_3.5_3.5":180.53,"3.0_3.5_4.0":193.51,"3.0_3.5_4.5":209.17,"3.0_3.5_5.0":216.39,"3.0_4.0_1.0":115.75,"3.0_4.0_1.5":127.07,"3.0_4.0_2.0":139.42,"3.0_4.0_2.5":150.67,"3.0_4.0_3.0":169.49,"3.0_4.0_3.5":185.31,"3.0_4.0_4.0":200,"3.0_4.0_4.5":212.29,"3.0_4.0_5.0":222.54};
+const BASE_RTP = 95.74;
+const BASE_BET = 5;
+
+function getRtp(size, recharge, coef) {
+  const key = size.toFixed(1)+'_'+recharge.toFixed(1)+'_'+coef.toFixed(1);
+  return RTP_TABLE[key] || BASE_RTP;
+}
+
+function updateGameParams() {
+  const size     = parseFloat(document.getElementById('paramSize').value);
+  const recharge = parseFloat(document.getElementById('paramRecharge').value);
+  const coef     = parseFloat(document.getElementById('paramCoef').value);
+  document.getElementById('paramSizeVal').textContent    = size.toFixed(1);
+  document.getElementById('paramRechargeVal').textContent = recharge.toFixed(1);
+  document.getElementById('paramCoefVal').textContent    = coef.toFixed(1);
+  const rtp = getRtp(size, recharge, coef);
+  const bet = Math.round(BASE_BET * rtp / BASE_RTP * 100) / 100;
+  document.getElementById('paramRtpDisplay').textContent = 'RTP: ' + rtp.toFixed(2) + '%';
+  document.getElementById('paramBetDisplay').textContent = 'Bet: $' + bet.toFixed(2) + '/ball';
+}
+
+
   if (coef > 1) {
     CONFIG.SPEED = 0.05;
     CONFIG.COUNTDOWN = Math.round(45 * coef);
@@ -957,6 +1009,15 @@ const urlRecharge = parseFloat(urlParams.get('recharge') || '1') || 1;
 applyCoef(urlCoef);
 applySize(urlSize);
 applyRecharge(urlRecharge);
+
+// ===== SLIDER INIT =====
+document.getElementById('paramSize').value     = urlSize;
+document.getElementById('paramRecharge').value = urlRecharge;
+document.getElementById('paramCoef').value     = urlCoef;
+updateGameParams();
+['paramSize','paramRecharge','paramCoef'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateGameParams);
+});
 
 if (debugMode) { document.getElementById('simPanel').style.display = 'block'; document.body.classList.add('debug-mode'); }
 
@@ -1430,6 +1491,10 @@ async function startGame(seed) {
   }
   
   currentSeed = seed || Math.floor(Math.random() * 0x7FFFFFFF);
+  // Apply slider params
+  applySize(parseFloat(document.getElementById('paramSize').value) || 1);
+  applyRecharge(parseFloat(document.getElementById('paramRecharge').value) || 1);
+  applyCoef(parseFloat(document.getElementById('paramCoef').value) || 1);
   gameState = GameEngine.createInitialState(currentSeed, numBalls);
   gameRunning = true;
   particles = [];
@@ -1648,47 +1713,20 @@ function alignSidePanel() {
     sp.style.marginTop = Math.max(0, diff) + 'px';
   }
 }
-// ===== SIMULATION (debug) =====
+// ===== SIMULATION (debug) — Worker-based =====
 if (debugMode) {
-  document.getElementById('simStop').addEventListener('click', () => { simStopped = true; });
+  let simWorker = null;
 
-  let simStopped = false;
-  document.getElementById('simRun').addEventListener('click', () => {
-    simStopped = false;
-    const stopBtn = document.getElementById('simStop');
-    const runBtn = document.getElementById('simRun');
-    stopBtn.style.display = 'inline';
-    runBtn.disabled = true;
-    const numBalls = parseInt(document.getElementById('simBalls').value) || 1000000;
-    const seedVal = document.getElementById('simSeed').value ? parseInt(document.getElementById('simSeed').value) : Math.floor(Date.now()/1000);
-    const perSession = parseInt(document.getElementById('simSession').value) || 0;
-    const goalR = document.getElementById('simGoalR').value;
-    if (goalR) CONFIG.GOAL_R = parseFloat(goalR);
-    const simCoef = parseFloat(document.getElementById('simCoef').value) || 1;
-    applyCoef(simCoef);
-    const simSize = parseFloat(document.getElementById('simSize').value) || 1;
-    applySize(simSize);
-    const simRecharge = parseFloat(document.getElementById('simRecharge').value) || 1;
-    applyRecharge(simRecharge);
-    const out = document.getElementById('simOut');
-    const BET = GameEngine.BET_PER_BALL;
-    
-    if (perSession <= 0) {
-      // Single simulation with progress
-      out.textContent = 'Running... 0%';
-      const CHUNK = 10000;
-      let done = 0;
-      let state = GameEngine.createInitialState(seedVal, numBalls);
-      
-      function formatStats(s, totalWin, prefix = '⏳') {
-        const bet = s.ballsFired * BET;
-        const rtp = bet > 0 ? (totalWin / bet * 100).toFixed(2) : '0.00';
-        return `${prefix} ${Math.round(s.ballsFired/numBalls*100)}%
+  function simFormatStats(s, totalWin, numBalls, seedVal, simCoef, simSize, simRecharge, cfg, prefix = '⏳') {
+    const BET = 5;
+    const bet = s.ballsFired * BET;
+    const rtp = bet > 0 ? (totalWin / bet * 100).toFixed(2) : '0.00';
+    return `${prefix} ${Math.round(s.ballsFired/numBalls*100)}%
 --- params ---
 Balls: ${numBalls.toLocaleString()} | Seed: ${seedVal}
 Coef: ${simCoef} | Size: ${simSize} | RechargeR: ${simRecharge}
-GOAL_R: ${CONFIG.GOAL_R} | BALL_R: ${CONFIG.BALL_R.toFixed(3)} | CENTER_R: ${CONFIG.CENTER_R.toFixed(3)}
-COUNTDOWN: ${CONFIG.COUNTDOWN} | MAX_TICKS: ${CONFIG.MAX_TICKS_PER_BALL}
+GOAL_R: ${cfg.GOAL_R} | BALL_R: ${cfg.BALL_R.toFixed(3)} | CENTER_R: ${cfg.CENTER_R.toFixed(3)}
+COUNTDOWN: ${cfg.COUNTDOWN} | MAX_TICKS: ${cfg.MAX_TICKS_PER_BALL}
 --- progress ---
 Balls: ${s.ballsFired.toLocaleString()}/${numBalls.toLocaleString()}
 Bet: $${bet.toLocaleString()}
@@ -1704,61 +1742,66 @@ Collisions: ${s.collisions} ($${s.collisionsWin})
 Recharges: ${s.recharges}
 Timeouts: ${s.timeouts}
 Max Prog: ×${s.progressiveMax}`;
+  }
+
+  document.getElementById('simStop').addEventListener('click', () => {
+    if (simWorker) { simWorker.postMessage({ type: 'stop' }); }
+  });
+
+  document.getElementById('simRun').addEventListener('click', () => {
+    const stopBtn = document.getElementById('simStop');
+    const runBtn  = document.getElementById('simRun');
+    const out     = document.getElementById('simOut');
+    const numBalls  = parseInt(document.getElementById('simBalls').value) || 1000000;
+    const seedVal   = document.getElementById('simSeed').value ? parseInt(document.getElementById('simSeed').value) : Math.floor(Date.now()/1000);
+    const perSession = parseInt(document.getElementById('simSession').value) || 0;
+    const goalR     = document.getElementById('simGoalR').value || '';
+    const simCoef   = parseFloat(document.getElementById('simCoef').value) || 1;
+    const simSize   = parseFloat(document.getElementById('simSize').value) || 1;
+    const simRecharge = parseFloat(document.getElementById('simRecharge').value) || 1;
+
+    stopBtn.style.display = 'inline';
+    runBtn.disabled = true;
+    out.textContent = 'Starting worker...';
+
+    if (simWorker) simWorker.terminate();
+    simWorker = new Worker('sim_worker.js');
+
+    simWorker.onmessage = (e) => {
+      const msg = e.data;
+      if (msg.type === 'progress') {
+        out.textContent = simFormatStats(msg.stats, msg.totalWin, numBalls, seedVal, simCoef, simSize, simRecharge, msg.config, '⏳');
+      } else if (msg.type === 'done') {
+        stopBtn.style.display = 'none'; runBtn.disabled = false;
+        out.textContent = simFormatStats(msg.stats, msg.totalWin, numBalls, seedVal, simCoef, simSize, simRecharge, msg.config, '✅');
+        simWorker.terminate(); simWorker = null;
+      } else if (msg.type === 'stopped') {
+        stopBtn.style.display = 'none'; runBtn.disabled = false;
+        out.textContent = simFormatStats(msg.stats, msg.totalWin, numBalls, seedVal, simCoef, simSize, simRecharge, msg.config, '🛑');
+        simWorker.terminate(); simWorker = null;
+      } else if (msg.type === 'session_progress') {
+        out.textContent = `Running sessions... ${msg.done}/${msg.sessions} (${Math.round(msg.done/msg.sessions*100)}%)`;
+      } else if (msg.type === 'done_sessions') {
+        stopBtn.style.display = 'none'; runBtn.disabled = false;
+        out.textContent = `✅ DONE\nSessions: ${msg.sessions} × ${perSession} balls\nRTP: ${msg.totalRtp}%\nMean: ${msg.avg}% | StdDev: ${msg.std}%\nMin: ${msg.min}% | Max: ${msg.max}%`;
+        simWorker.terminate(); simWorker = null;
+      } else if (msg.type === 'stopped') {
+        stopBtn.style.display = 'none'; runBtn.disabled = false;
+        out.textContent = '🛑 Stopped';
+        simWorker.terminate(); simWorker = null;
       }
-      
-      function runChunk() {
-        const start = Date.now();
-        while (!state.finished && Date.now() - start < 100) {
-          state = GameEngine.tick(state).state;
-        }
-        done = state.stats.ballsFired;
-        out.textContent = formatStats(state.stats, state.totalWin, '⏳');
-        
-        if (!state.finished && !simStopped) {
-          setTimeout(runChunk, 0);
-        } else {
-          stopBtn.style.display = 'none';
-          runBtn.disabled = false;
-          const prefix = simStopped ? '🛑' : '✅';
-          out.textContent = formatStats(state.stats, state.totalWin, prefix);
-        }
-      }
-      runChunk();
-    } else {
-      // Session-based simulation
-      const sessions = Math.floor(numBalls / perSession);
-      let rtps = [], tBet = 0, tWin = 0, i = 0;
-      out.textContent = `Running sessions... 0/${sessions}`;
-      
-      function runSession() {
-        const start = Date.now();
-        while (i < sessions && Date.now() - start < 100) {
-          const s = GameEngine.simulate(seedVal + i, perSession);
-          const bet = s.ballsFired * BET;
-          rtps.push(bet > 0 ? s.totalWin / bet * 100 : 0);
-          tBet += bet; tWin += s.totalWin;
-          i++;
-        }
-        out.textContent = `Running sessions... ${i}/${sessions} (${Math.round(i/sessions*100)}%)`;
-        
-        if (i < sessions && !simStopped) {
-          setTimeout(runSession, 0);
-        } else {
-          stopBtn.style.display = 'none';
-          runBtn.disabled = false;
-          rtps.sort((a,b) => a - b);
-          const n = rtps.length;
-          const mean = rtps.reduce((a,b) => a+b, 0) / n;
-          const sigma = Math.sqrt(rtps.reduce((a,b) => a + (b-mean)**2, 0) / n);
-          const med = n%2===0 ? (rtps[n/2-1]+rtps[n/2])/2 : rtps[Math.floor(n/2)];
-          const overall = tWin / tBet * 100;
-          out.textContent = `✅ DONE\nBalls fired: ${Math.round(tBet/BET).toLocaleString()}\nTotal Bet: $${tBet.toLocaleString()}\nTotal Win: $${Math.round(tWin).toLocaleString()}\nRTP: ${overall.toFixed(2)}%\n--- sessions (${n} × ${perSession} balls) ---\nMean RTP: ${mean.toFixed(2)}%\nMedian: ${med.toFixed(2)}%\nStdDev: ${sigma.toFixed(2)}%\nMin/Max: ${rtps[0].toFixed(1)}% / ${rtps[n-1].toFixed(1)}%\nP5/P25: ${rtps[Math.floor(n*.05)].toFixed(1)}% / ${rtps[Math.floor(n*.25)].toFixed(1)}%\nP75/P95: ${rtps[Math.floor(n*.75)].toFixed(1)}% / ${rtps[Math.floor(n*.95)].toFixed(1)}%\nZero win: ${(rtps.filter(r=>r===0).length/n*100).toFixed(1)}%\nOver 200%: ${(rtps.filter(r=>r>200).length/n*100).toFixed(1)}%`;
-        }
-      }
-      runSession();
-    }
+    };
+
+    simWorker.onerror = (e) => {
+      out.textContent = '❌ Worker error: ' + e.message;
+      stopBtn.style.display = 'none'; runBtn.disabled = false;
+    };
+
+    simWorker.postMessage({ type: 'sim', seed: seedVal, numBalls, coef: simCoef,
+      size: simSize, recharge: simRecharge, goalR, perSession });
   });
 }
+
 
 alignSidePanel();
 window.addEventListener('resize', alignSidePanel);
