@@ -258,4 +258,79 @@ self.onmessage = function(e) {
       });
     }
   }
+
+  if (msg.type === 'scan') {
+    stopped = false;
+    const { runs, ballsPerRun } = msg;
+    const SIZES     = [1.0, 1.5, 2.0, 2.5, 3.0];
+    const RECHARGES = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
+    const COEFS     = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
+    const BET = CONFIG.BET_PER_BALL;
+
+    const results = [];
+    let i = 0;
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function runOne() {
+      if (i >= runs || stopped) {
+        // done — compute stats
+        const rtps = results.map(r => r.rtp).sort((a,b) => a-b);
+        const n = rtps.length;
+        const mean = rtps.reduce((a,b)=>a+b,0)/n;
+        const std  = Math.sqrt(rtps.map(r=>(r-mean)**2).reduce((a,b)=>a+b,0)/n);
+        const med  = n%2===0 ? (rtps[n/2-1]+rtps[n/2])/2 : rtps[Math.floor(n/2)];
+
+        // top 10 highest RTP
+        const top10 = [...results].sort((a,b)=>b.rtp-a.rtp).slice(0,10);
+        // bottom 10
+        const bot10 = [...results].sort((a,b)=>a.rtp-b.rtp).slice(0,10);
+
+        self.postMessage({ type: 'scan_done', stopped,
+          n, mean: mean.toFixed(2), std: std.toFixed(2),
+          med: med.toFixed(2), min: rtps[0].toFixed(2), max: rtps[n-1].toFixed(2),
+          p5:  rtps[Math.floor(n*.05)].toFixed(2),
+          p25: rtps[Math.floor(n*.25)].toFixed(2),
+          p75: rtps[Math.floor(n*.75)].toFixed(2),
+          p95: rtps[Math.floor(n*.95)].toFixed(2),
+          over200: rtps.filter(r=>r>200).length,
+          over150: rtps.filter(r=>r>150).length,
+          under80: rtps.filter(r=>r<80).length,
+          top10, bot10
+        });
+        return;
+      }
+
+      const size     = pick(SIZES);
+      const recharge = pick(RECHARGES);
+      const coef     = pick(COEFS);
+      const seed     = Math.floor(Math.random() * 0x7FFFFFFF);
+
+      CONFIG.BALL_R=0.2; CONFIG.CENTER_R=0.225; CONFIG.SPEED=0.05;
+      CONFIG.COUNTDOWN=45; CONFIG.SPAWN_INTERVAL=60;
+      CONFIG.SPAWN_COOLDOWN=60; CONFIG.MAX_TICKS_PER_BALL=600; CONFIG.GOAL_R=1.02;
+      applySize(size); applyRecharge(recharge); applyCoef(coef);
+
+      let state = {
+        rng: new JavaRandom(seed), balls: [], tickCount:0, ballsSpawned:0,
+        numBalls: ballsPerRun, spawnCooldown:0, progressive:1, timeoutCount:0, totalWin:0,
+        stats:{ballsFired:0,goals:0,goalsWin:0,golden:0,goldenWin:0,explosions:0,
+               explosionsWin:0,jackpots:0,jackpotsWin:0,collisions:0,collisionsWin:0,
+               recharges:0,timeouts:0,progressiveMax:1,explodedBalls:0},
+        finished:false, nextBallId:1
+      };
+      while (!state.finished) state = tick(state);
+
+      const rtp = state.totalWin / (ballsPerRun * BET) * 100;
+      results.push({ size, recharge, coef, seed, rtp: Math.round(rtp*100)/100 });
+      i++;
+
+      if (i % 50 === 0) {
+        self.postMessage({ type: 'scan_progress', done: i, runs });
+      }
+      // yield every 100 to avoid blocking
+      if (i % 100 === 0) { setTimeout(runOne, 0); } else { runOne(); }
+    }
+    runOne();
+  }
 };

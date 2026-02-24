@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ball Rush League Interactive v1.1.1</title>
+  <title>Ball Rush League Interactive v1.1.2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
@@ -362,6 +362,13 @@
     <button id="simRun">Run</button>
     <button id="simStop" style="display:none">Stop</button>
     <pre id="simOut"></pre>
+    <hr>
+    <b>Random Scan</b><br>
+    <label>Runs: <input id="scanRuns" value="1000" style="width:60px"></label>
+    <label>Balls/run: <input id="scanBalls" value="500" style="width:60px"></label><br>
+    <button id="scanRun">Scan</button>
+    <button id="scanStop" style="display:none">Stop</button>
+    <pre id="scanOut"></pre>
   </div>
 
   <div class="modal" id="infoModal"><div class="modal-content" id="infoContent"></div></div>
@@ -1804,6 +1811,66 @@ Max Prog: ×${s.progressiveMax}`;
 
     simWorker.postMessage({ type: 'sim', seed: seedVal, numBalls, coef: simCoef,
       size: simSize, recharge: simRecharge, goalR, perSession });
+  });
+
+  // ===== RANDOM SCAN =====
+  let scanWorker = null;
+  document.getElementById('scanStop').addEventListener('click', () => {
+    if (scanWorker) scanWorker.postMessage({ type: 'stop' });
+  });
+
+  document.getElementById('scanRun').addEventListener('click', () => {
+    const runs       = parseInt(document.getElementById('scanRuns').value)  || 1000;
+    const ballsPerRun = parseInt(document.getElementById('scanBalls').value) || 500;
+    const scanBtn    = document.getElementById('scanRun');
+    const stopBtn    = document.getElementById('scanStop');
+    const out        = document.getElementById('scanOut');
+
+    scanBtn.disabled = true; stopBtn.style.display = 'inline';
+    out.textContent  = `Starting scan: ${runs} runs × ${ballsPerRun} balls...`;
+
+    if (scanWorker) scanWorker.terminate();
+    scanWorker = new Worker('sim_worker.js');
+
+    scanWorker.onmessage = (e) => {
+      const msg = e.data;
+      if (msg.type === 'scan_progress') {
+        out.textContent = `⏳ ${msg.done}/${msg.runs} (${Math.round(msg.done/msg.runs*100)}%)`;
+      } else if (msg.type === 'scan_done') {
+        scanBtn.disabled = false; stopBtn.style.display = 'none';
+        const prefix = msg.stopped ? '🛑' : '✅';
+        const top = msg.top10.map(r =>
+          `  s=${r.size} r=${r.recharge} c=${r.coef} → ${r.rtp}%`).join('\n');
+        const bot = msg.bot10.map(r =>
+          `  s=${r.size} r=${r.recharge} c=${r.coef} → ${r.rtp}%`).join('\n');
+        out.textContent =
+`${prefix} SCAN DONE — ${msg.n} runs × ${ballsPerRun} balls
+--- RTP distribution ---
+Mean:   ${msg.mean}%
+Median: ${msg.med}%
+StdDev: ${msg.std}%
+Min:    ${msg.min}%
+Max:    ${msg.max}%
+P5/P25: ${msg.p5}% / ${msg.p25}%
+P75/P95:${msg.p75}% / ${msg.p95}%
+--- extremes ---
+>200%:  ${msg.over200} (${(msg.over200/msg.n*100).toFixed(1)}%)
+>150%:  ${msg.over150} (${(msg.over150/msg.n*100).toFixed(1)}%)
+<80%:   ${msg.under80} (${(msg.under80/msg.n*100).toFixed(1)}%)
+--- TOP 10 highest RTP ---
+${top}
+--- TOP 10 lowest RTP ---
+${bot}`;
+        scanWorker.terminate(); scanWorker = null;
+      }
+    };
+
+    scanWorker.onerror = (e) => {
+      out.textContent = '❌ Worker error: ' + e.message;
+      scanBtn.disabled = false; stopBtn.style.display = 'none';
+    };
+
+    scanWorker.postMessage({ type: 'scan', runs, ballsPerRun });
   });
 }
 
