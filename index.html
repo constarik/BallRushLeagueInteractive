@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ball Rush League Interactive v1.0.8</title>
+  <title>Ball Rush League Interactive v1.0.9</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
@@ -325,6 +325,7 @@
     <label>GOAL_R: <input id="simGoalR" value="" style="width:50px"></label>
     <label>Coef: <input id="simCoef" value="1" style="width:50px"></label>
     <label>Size: <input id="simSize" value="1" style="width:50px"></label>
+    <label>Recharge R: <input id="simRecharge" value="0.225" style="width:50px"></label>
     <button id="simRun">Run</button>
     <button id="simStop" style="display:none">Stop</button>
     <pre id="simOut"></pre>
@@ -628,7 +629,10 @@ function applyCoef(coef) {
 
 function applySize(size) {
   CONFIG.BALL_R = 0.2 * size;
-  CONFIG.CENTER_R = 0.225 * size;
+}
+
+function applyRecharge(r) {
+  CONFIG.CENTER_R = r;
 }
 
 function dist(ax, ay, bx, by) {
@@ -949,8 +953,10 @@ const urlSeed = urlParams.get('seed') ? parseInt(urlParams.get('seed')) : null;
 const urlBalls = parseInt(urlParams.get('balls') || '100');
 const urlCoef = parseFloat(urlParams.get('coef') || '1') || 1;
 const urlSize = parseFloat(urlParams.get('size') || '1') || 1;
+const urlRecharge = parseFloat(urlParams.get('recharge') || '0.225') || 0.225;
 applyCoef(urlCoef);
 applySize(urlSize);
+applyRecharge(urlRecharge);
 
 if (debugMode) { document.getElementById('simPanel').style.display = 'block'; document.body.classList.add('debug-mode'); }
 
@@ -1676,6 +1682,12 @@ if (debugMode) {
         const bet = s.ballsFired * BET;
         const rtp = bet > 0 ? (totalWin / bet * 100).toFixed(2) : '0.00';
         return `${prefix} ${Math.round(s.ballsFired/numBalls*100)}%
+--- params ---
+Balls: ${numBalls.toLocaleString()} | Seed: ${seedVal}
+Coef: ${simCoef} | Size: ${simSize} | RechargeR: ${simRecharge}
+GOAL_R: ${CONFIG.GOAL_R} | BALL_R: ${CONFIG.BALL_R.toFixed(3)} | CENTER_R: ${CONFIG.CENTER_R.toFixed(3)}
+COUNTDOWN: ${CONFIG.COUNTDOWN} | MAX_TICKS: ${CONFIG.MAX_TICKS_PER_BALL}
+--- progress ---
 Balls: ${s.ballsFired.toLocaleString()}/${numBalls.toLocaleString()}
 Bet: $${bet.toLocaleString()}
 Win: $${Math.round(totalWin).toLocaleString()}
