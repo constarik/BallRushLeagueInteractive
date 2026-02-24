@@ -261,7 +261,7 @@ self.onmessage = function(e) {
 
   if (msg.type === 'scan') {
     stopped = false;
-    const { runs, ballsPerRun } = msg;
+    const { runs, ballsPerRun, rtpTable, baseRtp } = msg;
     const SIZES     = [1.0, 1.5, 2.0, 2.5, 3.0];
     const RECHARGES = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
     const COEFS     = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
@@ -270,6 +270,7 @@ self.onmessage = function(e) {
     const results = [];
     let i = 0;
     let scanTotalBet = 0, scanTotalWin = 0;
+    let scanScaledBet = 0;
 
     function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -298,7 +299,7 @@ self.onmessage = function(e) {
           over150: rtps.filter(r=>r>150).length,
           under80: rtps.filter(r=>r<80).length,
           top10, bot10,
-          totalBet: scanTotalBet, totalWin: scanTotalWin
+          totalBet: scanTotalBet, totalWin: scanTotalWin, scaledBet: scanScaledBet
         });
         return;
       }
@@ -325,8 +326,12 @@ self.onmessage = function(e) {
 
       const bet = ballsPerRun * BET;
       const win = state.totalWin;
-      scanTotalBet += bet;
-      scanTotalWin += win;
+      const key = size.toFixed(1)+'_'+recharge.toFixed(1)+'_'+coef.toFixed(1);
+      const tableRtp = (rtpTable && rtpTable[key]) ? rtpTable[key] : baseRtp;
+      const scaledBet = ballsPerRun * BET * tableRtp / baseRtp;
+      scanTotalBet   += bet;
+      scanTotalWin   += win;
+      scanScaledBet  += scaledBet;
       const rtp = win / bet * 100;
       results.push({ size, recharge, coef, seed, rtp: Math.round(rtp*100)/100 });
       i++;

@@ -1856,12 +1856,14 @@ Max Prog: ×${s.progressiveMax}`;
         }).join('\n');
         const totalBet = msg.totalBet.toFixed(0);
         const totalWin = msg.totalWin.toFixed(0);
-        const overallRaw = msg.totalBet > 0 ? (msg.totalWin / msg.totalBet * 100).toFixed(2) : '?';
+        const overallRaw    = msg.totalBet   > 0 ? (msg.totalWin / msg.totalBet   * 100).toFixed(2) : '?';
+        const overallActual = msg.scaledBet  > 0 ? (msg.totalWin / msg.scaledBet  * 100).toFixed(2) : '?';
         out.textContent =
 `${prefix} SCAN DONE — ${msg.n} runs × ${ballsPerRun} balls
-Total Bet:  $${totalBet}
-Total Win:  $${totalWin}
-Overall RTP: ${overallRaw}%
+Total Bet (raw $5):  $${totalBet}
+Total Win:           $${totalWin}
+Raw RTP:    ${overallRaw}%
+Actual RTP: ${overallActual}%
 --- raw RTP distribution (vs $5/ball) ---
 Mean:   ${msg.mean}%
 Median: ${msg.med}%
@@ -1887,7 +1889,7 @@ ${bot}`;
       scanBtn.disabled = false; stopBtn.style.display = 'none';
     };
 
-    scanWorker.postMessage({ type: 'scan', runs, ballsPerRun });
+    scanWorker.postMessage({ type: 'scan', runs, ballsPerRun, rtpTable: RTP_TABLE, baseRtp: BASE_RTP });
   });
 }
 
