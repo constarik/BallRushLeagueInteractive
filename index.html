@@ -1452,7 +1452,12 @@ function gameLoop() {
 // ===== START / END =====
 async function startGame(seed) {
   const numBalls = parseInt(document.getElementById('ballCountInput').value) || 10;
-  
+  currentNumBalls = numBalls;
+  const _size     = parseFloat(document.getElementById('paramSize').value) || 1;
+  const _recharge = parseFloat(document.getElementById('paramRecharge').value) || 1;
+  const _coef     = parseFloat(document.getElementById('paramCoef').value) || 1;
+  currentBetPerBall = Math.round(BASE_BET * getRtp(_size, _recharge, _coef) / BASE_RTP * 100) / 100;
+
   currentGameId = null;
   
   if (!seed && !replayMode) {
@@ -1503,14 +1508,9 @@ async function startGame(seed) {
   
   currentSeed = seed || Math.floor(Math.random() * 0x7FFFFFFF);
   // Apply slider params
-  applySize(parseFloat(document.getElementById('paramSize').value) || 1);
-  applyRecharge(parseFloat(document.getElementById('paramRecharge').value) || 1);
-  applyCoef(parseFloat(document.getElementById('paramCoef').value) || 1);
-  const size     = parseFloat(document.getElementById('paramSize').value) || 1;
-  const recharge = parseFloat(document.getElementById('paramRecharge').value) || 1;
-  const coef     = parseFloat(document.getElementById('paramCoef').value) || 1;
-  currentBetPerBall = Math.round(BASE_BET * getRtp(size, recharge, coef) / BASE_RTP * 100) / 100;
-  currentNumBalls = numBalls;
+  applySize(_size);
+  applyRecharge(_recharge);
+  applyCoef(_coef);
   gameState = GameEngine.createInitialState(currentSeed, numBalls);
   gameRunning = true;
   particles = [];
