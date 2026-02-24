@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ball Rush League Interactive v1.1.0</title>
+  <title>Ball Rush League Interactive v1.1.1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
@@ -296,13 +296,17 @@
         <div class="param-val" id="paramRechargeVal">1.0</div>
       </div>
       <div class="param-slider">
-        <label>⚡ Coef</label>
+        <label>⚡ Speed</label>
         <input type="range" id="paramCoef" min="1" max="5" step="0.5" value="1">
         <div class="param-val" id="paramCoefVal">1.0</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
         <div class="param-rtp" id="paramRtpDisplay">RTP: 95.74%</div>
         <div class="param-bet" id="paramBetDisplay">Bet: $5/ball</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+          <span style="font-size:11px;color:#aaa;">Base $</span>
+          <input type="number" id="paramBaseBet" value="5" min="0.01" step="0.01" style="width:50px;background:#1a3a2a;color:#ffd700;border:1px solid #3a7a4a;border-radius:4px;padding:2px 4px;font-size:12px;text-align:center;">
+        </div>
       </div>
     </div>
     <div class="status" id="status"></div>
@@ -654,11 +658,12 @@ function updateGameParams() {
   const size     = parseFloat(document.getElementById('paramSize').value);
   const recharge = parseFloat(document.getElementById('paramRecharge').value);
   const coef     = parseFloat(document.getElementById('paramCoef').value);
+  const baseBet  = parseFloat(document.getElementById('paramBaseBet').value) || BASE_BET;
   document.getElementById('paramSizeVal').textContent    = size.toFixed(1);
   document.getElementById('paramRechargeVal').textContent = recharge.toFixed(1);
   document.getElementById('paramCoefVal').textContent    = coef.toFixed(1);
   const rtp = getRtp(size, recharge, coef);
-  const bet = Math.round(BASE_BET * rtp / BASE_RTP * 100) / 100;
+  const bet = Math.round(baseBet * rtp / BASE_RTP * 100) / 100;
   document.getElementById('paramRtpDisplay').textContent = 'RTP: ' + rtp.toFixed(2) + '%';
   document.getElementById('paramBetDisplay').textContent = 'Bet: $' + bet.toFixed(2) + '/ball';
 }
@@ -1015,7 +1020,7 @@ document.getElementById('paramSize').value     = urlSize;
 document.getElementById('paramRecharge').value = urlRecharge;
 document.getElementById('paramCoef').value     = urlCoef;
 updateGameParams();
-['paramSize','paramRecharge','paramCoef'].forEach(id => {
+['paramSize','paramRecharge','paramCoef','paramBaseBet'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateGameParams);
 });
 
