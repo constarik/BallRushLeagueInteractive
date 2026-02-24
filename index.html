@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ball Rush League Interactive v1.0.7</title>
+  <title>Ball Rush League Interactive v1.0.8</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TRP1QX4878"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-TRP1QX4878');</script>
@@ -213,7 +213,7 @@
         <span class="lang-flag" data-lang="zh">🇨🇳</span>
       </div>
       <h1>⚽ BALL RUSH</h1>
-      <div class="subtitle">LEAGUE INTERACTIVE v1.0.7</div>
+      <div class="subtitle">LEAGUE INTERACTIVE v1.0.8</div>
       <label data-i18n="nickLabel">YOUR NICK</label>
       <div class="nick-display" id="nickDisplay"></div>
       <div class="nick-shuffle" id="nickShuffle" title="Random">🎲</div>
@@ -324,6 +324,7 @@
     <label>Per session: <input id="simSession" value="0"></label>
     <label>GOAL_R: <input id="simGoalR" value="" style="width:50px"></label>
     <label>Coef: <input id="simCoef" value="1" style="width:50px"></label>
+    <label>Size: <input id="simSize" value="1" style="width:50px"></label>
     <button id="simRun">Run</button>
     <button id="simStop" style="display:none">Stop</button>
     <pre id="simOut"></pre>
@@ -335,7 +336,7 @@
 // ========================================
 // Ball Rush League v7.1.0 - Single Engine Architecture
 // ========================================
-const GAME_VERSION = 'v1.0.7';
+const GAME_VERSION = 'v1.0.8';
 const SERVER_URL = 'https://ball-rush-server.onrender.com';
 
 // ===== AUDIO DATA (base64) =====
@@ -623,6 +624,11 @@ function applyCoef(coef) {
     CONFIG.SPAWN_COOLDOWN = 60;
     CONFIG.MAX_TICKS_PER_BALL = 600;
   }
+}
+
+function applySize(size) {
+  CONFIG.BALL_R = 0.2 * size;
+  CONFIG.CENTER_R = 0.225 * size;
 }
 
 function dist(ax, ay, bx, by) {
@@ -942,7 +948,9 @@ const fraudMode = urlParams.has('fraud');
 const urlSeed = urlParams.get('seed') ? parseInt(urlParams.get('seed')) : null;
 const urlBalls = parseInt(urlParams.get('balls') || '100');
 const urlCoef = parseFloat(urlParams.get('coef') || '1') || 1;
+const urlSize = parseFloat(urlParams.get('size') || '1') || 1;
 applyCoef(urlCoef);
+applySize(urlSize);
 
 if (debugMode) { document.getElementById('simPanel').style.display = 'block'; document.body.classList.add('debug-mode'); }
 
@@ -1652,6 +1660,8 @@ if (debugMode) {
     if (goalR) CONFIG.GOAL_R = parseFloat(goalR);
     const simCoef = parseFloat(document.getElementById('simCoef').value) || 1;
     applyCoef(simCoef);
+    const simSize = parseFloat(document.getElementById('simSize').value) || 1;
+    applySize(simSize);
     const out = document.getElementById('simOut');
     const BET = GameEngine.BET_PER_BALL;
     
